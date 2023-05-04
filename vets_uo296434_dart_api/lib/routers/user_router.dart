@@ -10,7 +10,9 @@ final userRouter = Router()
   ..get('/users', _usersHandler)
   ..post('/users/signUp', _signUpHanler)
   ..post('/users/login', _loginHanler)
-  ..get('/users/<id>', _getUserHanler);
+  ..get('/users/<id>', _getUserHanler)
+  ..delete('/users/<id>', _deleteUserHandler)
+  ..put('/users/<id>', _updateUserHandler);
 
 Future<Response> _usersHandler(Request request) async {
   final dynamic token =
@@ -20,8 +22,7 @@ Future<Response> _usersHandler(Request request) async {
   if (verifiedToken['authorized'] == false) {
     return Response.unauthorized(json.encode(verifiedToken));
   } else {
-    dynamic userId = ObjectId.fromHexString(request.params['id'].toString());
-    final users = await UsersRepository.findOne({"_id": userId});
+    final users = await UsersRepository.findAll();
     return Response.ok(json.encode(users));
   }
 }
@@ -126,5 +127,45 @@ Future<Response> _getUserHanler(Request request) async {
     dynamic userId = ObjectId.fromHexString(request.params['id'].toString());
     final users = await UsersRepository.findOne({"_id": userId});
     return Response.ok(json.encode(users));
+  }
+}
+
+Future<Response> _deleteUserHandler(Request request) async {
+  final dynamic token =
+      request.headers.containsKey("token") ? request.headers["token"] : "";
+  final Map<String, dynamic> verifiedToken =
+      jwt_service.UserTokenService.verifyJwt(token);
+  if (verifiedToken['authorized'] == false) {
+    return Response.unauthorized(json.encode(verifiedToken));
+  } else {
+    dynamic userId = ObjectId.fromHexString(request.params['id'].toString());
+    final userDeleted = await UsersRepository.findOne({"_id": userId});
+    if (userDeleted != null) {
+      await UsersRepository.remove({"_id": userId});
+      return Response.ok('Usuario eliminado correctamente $userDeleted');
+    } else {
+      return Response.notFound('Usuario no encontrado');
+    }
+  }
+}
+
+Future<Response> _updateUserHandler(Request request) async {
+  final dynamic token =
+      request.headers.containsKey("token") ? request.headers["token"] : "";
+  final Map<String, dynamic> verifiedToken =
+      jwt_service.UserTokenService.verifyJwt(token);
+  if (verifiedToken['authorized'] == false) {
+    return Response.unauthorized(json.encode(verifiedToken));
+  } else {
+    dynamic userId = ObjectId.fromHexString(request.params['id'].toString());
+    final user = await UsersRepository.findOne({"_id": userId});
+    if (user != null) {
+      final userDataToUpdate = json.decode(await request.readAsString());
+      await UsersRepository.update(userId, userDataToUpdate);      
+      final userUpdated = await UsersRepository.findOne({"_id": userId});
+      return Response.ok('Usuario actualizado correctamente $userUpdated');
+    } else {
+      return Response.notFound('Usuario no encontrado');
+    }
   }
 }

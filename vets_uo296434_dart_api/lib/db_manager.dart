@@ -68,4 +68,14 @@ class DbManager {
     final result = await _collection.findOne(filter);
     return result;
   }
+
+  Future<dynamic> deleteOne(filter) async {
+    final result = await _collection.deleteOne(filter);
+    return result;
+  }
+
+  Future<dynamic> updateOne(Map<String, dynamic> filter, Map<String, dynamic> update) async {
+    final result = await _collection.updateOne(filter, update);
+    return result;
+  }
 }
